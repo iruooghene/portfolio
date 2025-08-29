@@ -3,7 +3,7 @@ name: 🚀 Deploy to Vercel
 on:
   push:
     branches:
-      - main   # or your deploy branch
+      - main
 
 jobs:
   deploy:
@@ -11,7 +11,31 @@ jobs:
 
     steps:
       - name: ✅ Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: 📦 Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'  # Match your project's Node.js version
+
+      - name: 📦 Install npm
+        run: npm install -g npm@latest
+
+      - name: 📦 Cache npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: 🧹 Clear npm cache
+        run: npm cache clean --force
+
+      - name: 🩺 Verify package.json
+        run: |
+          ls -la
+          cat package.json
 
       - name: 📦 Install dependencies
         run: npm install
@@ -19,9 +43,15 @@ jobs:
       - name: 🛠️ Build project
         run: npm run build
 
+      - name: 🧹 Clean .vercel directory
+        run: rm -rf .vercel
+
+      - name: 📦 Install Vercel CLI
+        run: npm install -g vercel@latest
+
       - name: 🚀 Deploy to Vercel
-        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes --confirm
+        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
+          VERCEL_TELEMETRY_DISABLED: 1
